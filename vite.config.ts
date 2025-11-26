@@ -25,6 +25,7 @@ export default defineConfig(({ mode }) => {
             manualChunks: undefined,
           }
         }
-      }
+      },
+      publicDir: 'public'
     };
 });
