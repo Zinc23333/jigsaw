@@ -44,7 +44,8 @@ export default function App() {
   const [showRules, setShowRules] = useState(false); // 控制规则弹窗显示
   const [showDebugAnimation, setShowDebugAnimation] = useState(false); // 控制调试动画显示
   const [isMobileView, setIsMobileView] = useState(window.innerWidth < 730); // 检测是否为移动端视图
-  
+  const [showResizeAlert, setShowResizeAlert] = useState(false); // 控制窗口调整提示显示
+
   // Dragging State
   const dragRef = useRef<{
     active: boolean;
@@ -403,6 +404,14 @@ export default function App() {
     const handleResize = () => {
         // 更新移动端视图状态
         setIsMobileView(window.innerWidth < 730);
+        
+        // 如果正在游戏中，显示调整窗口大小提示
+        if (gameState.status === 'playing' || gameState.status === 'won') {
+            setShowResizeAlert(true);
+            // 3秒后自动隐藏提示
+            setTimeout(() => setShowResizeAlert(false), 3000);
+        }
+        
         clearTimeout(timeoutId);
         timeoutId = setTimeout(ensurePiecesInsideBounds, 100);
     };
@@ -412,7 +421,7 @@ export default function App() {
         window.removeEventListener('resize', handleResize);
         clearTimeout(timeoutId);
     };
-  }, [gameState.status, isMobileView]);
+  }, [gameState.status, isMobileView, setShowResizeAlert]);
 
 
   // --- Hit Testing Logic ---
@@ -1085,6 +1094,13 @@ export default function App() {
         }
       `}</style>
       
+      {/* 窗口调整提示 */}
+      {showResizeAlert && (
+        <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-[9999] bg-black/80 text-white px-6 py-4 rounded-lg text-center max-w-md">
+          <p>当前游戏暂不支持调整界面大小，调整大小可能会造成布局异常。如果要以新的界面大小玩游戏，请刷新网页，刷新网页会丢失当前进度。</p>
+        </div>
+      )}
+
       {/* Animated Nanoka Card */}
       {showDebugAnimation && (
         <div className="fixed top-3/4 right-4 z-[201] pointer-events-none" style={{ 
@@ -1595,6 +1611,13 @@ export default function App() {
                   <p>2. 相邻的拼图块会自动连接成组，可以整体移动</p>
                   <p>3. <strong>【双击】</strong>已连接的拼图组可以将其分离</p>
                 </div>
+
+                <div className="bg-stone-200/50 p-4 rounded-lg">
+                  <h3 className="text-lg font-bold mb-2 text-stone-800">注意事项</h3>
+                  <p>当前游戏暂不支持调整界面大小，调整大小可能会造成布局异常。</p>
+                  <p>如果要以新的界面大小玩游戏，请刷新网页，刷新网页会丢失当前进度。</p>
+                  <p>由于个人能力有限，可能还有些其他的BUG，请见谅</p>
+                </div>
                 
                 <div className="bg-stone-200/50 p-4 rounded-lg">
                   <h3 className="text-lg font-bold mb-2 text-stone-800">操作说明</h3>
@@ -1616,7 +1639,6 @@ export default function App() {
                   <h3 className="text-lg font-bold mb-2 text-stone-800">特别说明</h3>
                   <p>本游戏属于《魔法少女的魔女审判》同人作品，所有素材均来自官方游戏解包，侵权删</p>
                   <p>本游戏由 Google AiStudio Gemini 3 和 Qwen 3 Coder 共同开发</p>
-                  <p>由于个人能力有限，可能有些bug，请见谅</p>
                   <p>如果好玩的话，欢迎推荐给其他人</p>
                 </div>
                 

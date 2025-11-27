@@ -1,8 +1,17 @@
 {
-  "name": "masterpiece-jigsaw",
+  "name": "monoka-jigsaw",
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "keywords": [
+    "puzzle",
+    "jigsaw",
+    "game",
+    "react",
+    "typescript"
+  ],
+  "author": "Zinc2333",
+  "license": "MIT",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
