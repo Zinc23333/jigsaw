@@ -17,6 +17,7 @@ const TAB_RATIO = 0.25;   // Tab size relative to piece smallest dimension
 // Margin for dragging constraints (not for coordinate offset!)
 const VIEWPORT_MARGIN_X = 36; 
 const VIEWPORT_MARGIN_Y = 36; 
+const HEADER_RESERVED_SPACE = 80; // 顶部保留区域高度
 
 export default function App() {
   const [gameState, setGameState] = useState<GameState & { boardOrigin: Point }>({
@@ -36,6 +37,8 @@ export default function App() {
   const [startTime, setStartTime] = useState<number | null>(null);
   const [elapsedTime, setElapsedTime] = useState<number>(0);
   const [isTimerRunning, setIsTimerRunning] = useState(false);
+  const [healAnimationDuration, setHealAnimationDuration] = useState<number>(1000);
+  const [confettiKey, setConfettiKey] = useState<number>(0); // 用于强制重新渲染Confetti组件
   
   // Dragging State
   const dragRef = useRef<{
@@ -306,7 +309,7 @@ export default function App() {
         // We prioritize positions OUTSIDE the reference image.
         for (let i = 0; i < 10; i++) {
              const randX = Math.max(padding, Math.random() * maxX);
-             const randY = Math.max(padding, Math.random() * maxY);
+             const randY = Math.max(padding + HEADER_RESERVED_SPACE, Math.random() * maxY);
 
              // Check overlap with the reference image area
              const isOverlapping = (
@@ -366,7 +369,7 @@ export default function App() {
         setPieces(prev => prev.map(p => {
              const minX = -offsetX;
              const maxX = winW - p.width - offsetX;
-             const minY = -offsetY;
+             const minY = -offsetY + HEADER_RESERVED_SPACE;
              const maxY = winH - p.height - offsetY;
              
              let newX = p.currentPos.x;
@@ -500,7 +503,7 @@ export default function App() {
         const pMinDx = -offsetX - currentX;
         const pMaxDx = (winW - p.width - offsetX) - currentX;
         
-        const pMinDy = -offsetY - currentY;
+        const pMinDy = (-offsetY + HEADER_RESERVED_SPACE) - currentY;
         const pMaxDy = (winH - p.height - offsetY) - currentY;
 
         minDx = Math.max(minDx, pMinDx);
@@ -895,6 +898,8 @@ export default function App() {
           }
 
           setGameState(prev => ({...prev, status: 'won'}));
+          // 强制重新渲染Confetti组件
+          setConfettiKey(prev => prev + 1);
           setShowWinMessage(true);
           
           // Stop the timer when the game is won
@@ -939,6 +944,65 @@ export default function App() {
     };
   }, []);
 
+  // 添加治愈功能函数
+  const healPuzzle = () => {
+    // 停止计时器
+    setIsTimerRunning(false);
+    
+    // 计算未解决的拼图块数量
+    const unsolvedPieces = pieces.filter(piece => !piece.isSolved).length;
+    
+    // 根据未解决的拼图块数量计算动画持续时间 (1-5秒)
+    // 最少1秒，最多5秒
+    const animationDuration = Math.min(5000, Math.max(1000, unsolvedPieces * 100));
+    
+    // 设置动画持续时间
+    setHealAnimationDuration(animationDuration);
+    
+    // 先将所有拼图块合并到一个组中
+    setPieces(prevPieces => {
+      const unifiedGroupId = prevPieces.length > 0 ? prevPieces[0].groupId : 0;
+      return prevPieces.map(piece => ({
+        ...piece,
+        groupId: unifiedGroupId
+      }));
+    });
+    
+    // 触发动画，将所有拼图块移动到解决位置
+    // 使用setTimeout确保状态更新已经应用后再改变位置
+    setTimeout(() => {
+      setIsScattering(true);
+      
+      // 短暂延迟后将所有拼图块移动到解决位置并标记为已解决
+      setTimeout(() => {
+        setPieces(prevPieces => 
+          prevPieces.map(piece => ({
+            ...piece,
+            currentPos: { ...piece.solvedPos },
+            isSolved: true
+          }))
+        );
+        
+        // 更新游戏状态为已完成
+        setGameState(prev => ({ ...prev, status: 'won' }));
+        
+        // 强制重新渲染Confetti组件
+        setConfettiKey(prev => prev + 1);
+        
+        // 显示胜利信息
+        setShowWinMessage(true);
+      }, 50);
+      
+      // 动画结束后关闭动画状态
+      setTimeout(() => {
+        setIsScattering(false);
+      }, animationDuration);
+      
+      // 6秒后隐藏胜利信息
+      setTimeout(() => setShowWinMessage(false), 6000);
+    }, 0);
+  };
+
   return (
     <div 
       className="flex flex-col h-screen text-white overflow-hidden"
@@ -955,13 +1019,55 @@ export default function App() {
         onDoubleClick={handleDoubleClick}
         style={{ backgroundColor: 'transparent' }}
       >
+        {/* 幻视按钮 */}
+        {(gameState.status === 'playing' || gameState.status === 'won') && (
+          <button
+            className="absolute top-10 left-32 z-40 flex items-center cursor-pointer hover:opacity-80 transition-opacity duration-200 bg-transparent border-none"
+            style={{ color: '#a582fe' }}
+            onClick={() => setShowReferenceImage(!showReferenceImage)}
+          >
+            <img 
+              src="/assets/images/magic-1.webp" 
+              alt="Magic" 
+              className="h-12"
+              style={{ 
+                filter: 'none',
+                forcedColorAdjust: 'none',
+                colorScheme: 'dark'
+              }}
+            />
+            <span className="text-1xl font-bold">【幻视】</span>
+          </button>
+        )}
+
+        {/* 治愈按钮 */}
+        {(gameState.status === 'playing' || gameState.status === 'won') && (
+          <button
+            className="absolute top-10 left-64 z-40 flex items-center cursor-pointer hover:opacity-80 transition-opacity duration-200 bg-transparent border-none"
+            style={{ color: '#908d8e' }}
+            onClick={healPuzzle}
+          >
+            <img 
+              src="/assets/images/magic-2.webp" 
+              alt="Magic" 
+              className="h-12"
+              style={{ 
+                filter: 'none',
+                forcedColorAdjust: 'none',
+                colorScheme: 'dark'
+              }}
+            />
+            <span className="text-1xl font-bold">【治愈】</span>
+          </button>
+        )}
+
         {/* Image Selection Button */}
         {(gameState.status === 'playing' || gameState.status === 'won' || gameState.status === 'preview') && (
           <img 
             src="/assets/images/select.webp" 
             alt="Select" 
             onClick={() => setShowTaskSelector(true)}
-            className="absolute top-4 left-4 z-40 w-24 h-24 cursor-pointer hover:opacity-80 transition-opacity duration-200"
+            className="absolute top-2 left-4 z-40 w-24 h-24 cursor-pointer hover:opacity-80 transition-opacity duration-200"
             style={{ 
               filter: 'none',
               forcedColorAdjust: 'none',
@@ -973,7 +1079,7 @@ export default function App() {
         {/* Timer Display */}
         {(gameState.status === 'playing' || gameState.status === 'won' || gameState.status === 'preview') && (
           <div 
-            className="absolute top-4 right-4 z-40 text-white text-2xl font-bold flex items-center"
+            className="absolute top-0 right-4 z-40 text-white text-2xl font-bold flex items-center"
             style={{
               backgroundImage: 'url(/assets/images/counter.webp)',
               backgroundSize: 'contain',
@@ -1086,6 +1192,7 @@ export default function App() {
                                  isDragging={isDragging}
                                  connectedSides={connectedSides}
                                  animatePosition={isScattering}
+                                 animationDuration={healAnimationDuration}
                                />
                              );
                           })}
@@ -1096,7 +1203,7 @@ export default function App() {
         )}
 
         {/* Confetti Effect */}
-        {gameState.status === 'won' && <Confetti />}
+        {gameState.status === 'won' && <Confetti key={confettiKey} />}
 
         {/* Preview Overlay */}
         {gameState.status === 'preview' && pieces.length > 0 && (
@@ -1323,7 +1430,7 @@ export default function App() {
             src="/assets/images/select.webp" 
             alt="Select" 
             onClick={() => setShowTaskSelector(true)}
-            className="absolute top-4 left-4 z-40 w-24 h-24 cursor-pointer hover:opacity-80 transition-opacity duration-200"
+            className="absolute top-2 left-4 z-40 w-24 h-24 cursor-pointer hover:opacity-80 transition-opacity duration-200"
             style={{ 
               filter: 'none',
               forcedColorAdjust: 'none',

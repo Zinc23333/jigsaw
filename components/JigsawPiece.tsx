@@ -13,6 +13,7 @@ interface Props {
   scale?: number;
   connectedSides?: { top: boolean; right: boolean; bottom: boolean; left: boolean };
   animatePosition?: boolean;
+  animationDuration?: number; // 新增属性：动画持续时间
 }
 
 export const JigsawPiece: React.FC<Props> = ({
@@ -24,7 +25,8 @@ export const JigsawPiece: React.FC<Props> = ({
   isDragging = false,
   scale = 1,
   connectedSides = { top: false, right: false, bottom: false, left: false },
-  animatePosition = false
+  animatePosition = false,
+  animationDuration = 1000 // 默认1秒
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -187,7 +189,7 @@ export const JigsawPiece: React.FC<Props> = ({
         left: piece.currentPos.x - bleed,
         top: piece.currentPos.y - bleed,
         pointerEvents: 'none', 
-        transition: animatePosition ? 'top 1s cubic-bezier(0.25, 1, 0.5, 1), left 1s cubic-bezier(0.25, 1, 0.5, 1)' : 'none'
+        transition: animatePosition ? `top ${animationDuration}ms cubic-bezier(0.34, 1.56, 0.64, 1), left ${animationDuration}ms cubic-bezier(0.34, 1.56, 0.64, 1)` : 'none'
       }}
     />
   );
