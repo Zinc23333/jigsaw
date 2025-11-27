@@ -53,8 +53,8 @@ export const Confetti = () => {
     const render = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       
-      // Spawn fireworks periodically
-      if (tick % 40 === 0 && tick < 300) { // Stop spawning after ~5 seconds (assuming 60fps)
+      // Spawn fireworks periodically at the beginning to ensure animation plays
+      if (tick < 10) {
         // Left corner shooting up-right
         createFirework(0, canvas.height, [-80, -20]);
         // Right corner shooting up-left
@@ -99,6 +99,8 @@ export const Confetti = () => {
     return () => {
       cancelAnimationFrame(animationId);
       window.removeEventListener('resize', handleResize);
+      // 清空粒子数组，确保下次运行时从干净状态开始
+      particles = [];
     };
   }, []);
 

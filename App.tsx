@@ -39,6 +39,7 @@ export default function App() {
   const [isTimerRunning, setIsTimerRunning] = useState(false);
   const [healAnimationDuration, setHealAnimationDuration] = useState<number>(1000);
   const [confettiKey, setConfettiKey] = useState<number>(0); // 用于强制重新渲染Confetti组件
+  const [hasPlayedConfetti, setHasPlayedConfetti] = useState<boolean>(false); // 跟踪是否已播放过庆祝动画
   const [showRules, setShowRules] = useState(false); // 控制规则弹窗显示
   
   // Dragging State
@@ -109,6 +110,9 @@ export default function App() {
   // --- Initialization Logic ---
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Reset confetti play status when loading a new image
+    setHasPlayedConfetti(false);
+    
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
@@ -122,6 +126,9 @@ export default function App() {
   };
 
   const loadImage = (src: string) => {
+    // Reset confetti play status when loading a new image
+    setHasPlayedConfetti(false);
+    
     const img = new Image();
     img.src = src;
     img.onload = () => {
@@ -899,8 +906,11 @@ export default function App() {
           }
 
           setGameState(prev => ({...prev, status: 'won'}));
-          // 强制重新渲染Confetti组件
-          setConfettiKey(prev => prev + 1);
+          // 只在第一次获胜时播放庆祝动画
+          if (!hasPlayedConfetti) {
+            setConfettiKey(prev => prev + 1);
+            setHasPlayedConfetti(true);
+          }
           setShowWinMessage(true);
           
           // Stop the timer when the game is won
@@ -934,6 +944,9 @@ export default function App() {
   useEffect(() => {
     // Set to easy mode (4 pieces on short side)
     setTargetShortSideCount(4);
+    
+    // Reset confetti play status when initializing
+    setHasPlayedConfetti(false);
     
     // Load the first task image
     const img = new Image();
@@ -987,8 +1000,11 @@ export default function App() {
         // 更新游戏状态为已完成
         setGameState(prev => ({ ...prev, status: 'won' }));
         
-        // 强制重新渲染Confetti组件
-        setConfettiKey(prev => prev + 1);
+        // 只在第一次获胜时播放庆祝动画
+        if (!hasPlayedConfetti) {
+          setConfettiKey(prev => prev + 1);
+          setHasPlayedConfetti(true);
+        }
         
         // 显示胜利信息
         setShowWinMessage(true);
@@ -1325,6 +1341,9 @@ export default function App() {
                     key={id}
                     className="aspect-[2/1] rounded-lg overflow-hidden cursor-pointer transform transition-transform hover:scale-105 bg-slate-700"
                     onClick={() => {
+                      // Reset confetti play status when selecting a new task
+                      setHasPlayedConfetti(false);
+                      
                       const img = new Image();
                       img.src = `/assets/images/tasks/${id}.webp`;
                       img.onload = () => {
