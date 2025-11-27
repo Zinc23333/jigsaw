@@ -962,6 +962,11 @@ export default function App() {
             alt="Select" 
             onClick={() => setShowTaskSelector(true)}
             className="absolute top-4 left-4 z-40 w-24 h-24 cursor-pointer hover:opacity-80 transition-opacity duration-200"
+            style={{ 
+              filter: 'none',
+              forcedColorAdjust: 'none',
+              colorScheme: 'dark'
+            }}
           />
         )}
         
@@ -976,7 +981,10 @@ export default function App() {
               backgroundPosition: 'center',
               width: '190px',
               height: '130px',
-              fontFamily: 'Num-Regular, monospace'
+              fontFamily: 'Num-Regular, monospace',
+              filter: 'none',
+              forcedColorAdjust: 'none',
+              colorScheme: 'dark'
             }}
           >
             <div style={{ 
@@ -1116,7 +1124,7 @@ export default function App() {
                <div className="absolute inset-0 flex items-center justify-center">
                  <button 
                    onClick={startGame}
-                   className="text-white px-8 py-4 text-2xl font-bold flex items-center gap-2 animate-bounce border-0 cursor-pointer"
+                   className="text-white px-8 py-4 text-2xl font-bold flex items-center justify-center animate-bounce border-0 cursor-pointer"
                    style={{
                      backgroundImage: 'url(/assets/images/button.webp)',
                      backgroundSize: '100% 100%',
@@ -1125,7 +1133,10 @@ export default function App() {
                      height: '80px'
                    }}
                  >
-                   <PlayIcon /> 开始游戏
+                   <div className="flex items-center">
+                     <PlayIcon />
+                     <span className="ml-2">开始游戏</span>
+                   </div>
                  </button>
                </div>
             </div>
@@ -1145,19 +1156,35 @@ export default function App() {
 
         {/* Task Image Selector */}
         {showTaskSelector && (
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="bg-slate-800 rounded-xl p-6 max-w-5xl w-full max-h-[90vh] overflow-y-auto border border-slate-700"
-                 style={{ 
-                   backgroundImage: 'url(/assets/images/background2.webp)',
-                   backgroundSize: 'cover',
-                   backgroundPosition: 'center',
-                   backgroundColor: 'rgba(30, 41, 59, 0.9)'
-                 }}>
+          <div 
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+            onClick={(e) => {
+              // 防止点击弹窗背景时事件冒泡
+              e.stopPropagation();
+              setShowTaskSelector(false);
+            }}
+          >
+            <div 
+              className="bg-slate-800 rounded-xl p-6 max-w-5xl w-full max-h-[90vh] overflow-y-auto border border-slate-700"
+              style={{ 
+                backgroundImage: 'url(/assets/images/background2.webp)',
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                backgroundColor: 'rgba(30, 41, 59, 0.9)'
+              }}
+              onClick={(e) => {
+                // 防止点击弹窗内容时关闭弹窗
+                e.stopPropagation();
+              }}
+            >
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold text-white">选择图片</h2>
                 <button 
-                  onClick={() => setShowTaskSelector(false)}
-                  className="text-slate-400 hover:text-white text-2xl"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowTaskSelector(false);
+                  }}
+                  className="text-slate-400 hover:text-white text-3xl z-50 relative w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-700 transition-colors"
                 >
                   ×
                 </button>
@@ -1184,9 +1211,41 @@ export default function App() {
                   </div>
                 ))}
               </div>
+              {/* Custom Image Upload Section */}
+              <div className="mt-6">
+                <h3 className="text-lg font-semibold text-white mb-3">上传自己的图片</h3>
+                <label className="flex flex-col items-center justify-center w-full aspect-[3/1] border-2 border-dashed border-slate-400 rounded-lg cursor-pointer bg-slate-800/50 hover:bg-slate-700/50 transition-colors">
+                  <div className="flex flex-col items-center justify-center">
+                    <UploadIcon />
+                    <p className="text-sm text-slate-300 mt-1">点击上传图片</p>
+                    <p className="text-xs text-slate-400 mt-1">支持 JPG, PNG, WEBP 格式</p>
+                  </div>
+                  <input 
+                    type="file" 
+                    className="hidden" 
+                    accept="image/jpeg,image/png,image/webp"
+                    onChange={(e) => {
+                      handleImageUpload(e);
+                      setShowTaskSelector(false);
+                    }}
+                  />
+                </label>
+              </div>
               <div className="mt-6">
                 <h3 className="text-lg font-semibold text-white mb-3">难度等级</h3>
                 <div className="flex gap-3">
+                  <button 
+                    onClick={() => {
+                      setTargetShortSideCount(3);
+                    }}
+                    className={`flex-1 py-2 rounded-lg transition-colors ${
+                      targetShortSideCount === 3 
+                        ? 'bg-stone-600 text-white' 
+                        : 'bg-stone-200 text-stone-800 hover:bg-stone-300'
+                    }`}
+                  >
+                    简单
+                  </button>
                   <button 
                     onClick={() => {
                       setTargetShortSideCount(4);
@@ -1197,7 +1256,7 @@ export default function App() {
                         : 'bg-stone-200 text-stone-800 hover:bg-stone-300'
                     }`}
                   >
-                    简单
+                    普通
                   </button>
                   <button 
                     onClick={() => {
@@ -1205,18 +1264,6 @@ export default function App() {
                     }}
                     className={`flex-1 py-2 rounded-lg transition-colors ${
                       targetShortSideCount === 6 
-                        ? 'bg-stone-600 text-white' 
-                        : 'bg-stone-200 text-stone-800 hover:bg-stone-300'
-                    }`}
-                  >
-                    普通
-                  </button>
-                  <button 
-                    onClick={() => {
-                      setTargetShortSideCount(8);
-                    }}
-                    className={`flex-1 py-2 rounded-lg transition-colors ${
-                      targetShortSideCount === 8 
                         ? 'bg-stone-600 text-white' 
                         : 'bg-stone-200 text-stone-800 hover:bg-stone-300'
                     }`}
@@ -1277,6 +1324,11 @@ export default function App() {
             alt="Select" 
             onClick={() => setShowTaskSelector(true)}
             className="absolute top-4 left-4 z-40 w-24 h-24 cursor-pointer hover:opacity-80 transition-opacity duration-200"
+            style={{ 
+              filter: 'none',
+              forcedColorAdjust: 'none',
+              colorScheme: 'dark'
+            }}
           />
         )}
       </main>
