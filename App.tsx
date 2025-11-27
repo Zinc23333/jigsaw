@@ -39,6 +39,7 @@ export default function App() {
   const [isTimerRunning, setIsTimerRunning] = useState(false);
   const [healAnimationDuration, setHealAnimationDuration] = useState<number>(1000);
   const [confettiKey, setConfettiKey] = useState<number>(0); // 用于强制重新渲染Confetti组件
+  const [showRules, setShowRules] = useState(false); // 控制规则弹窗显示
   
   // Dragging State
   const dragRef = useRef<{
@@ -1061,6 +1062,27 @@ export default function App() {
           </button>
         )}
 
+        {/* 疑问按钮 */}
+        {(gameState.status === 'playing' || gameState.status === 'won') && (
+          <button
+            className="absolute top-10 right-56 z-40 flex items-center cursor-pointer hover:opacity-80 transition-opacity duration-200 bg-transparent border-none"
+            style={{ color: '#b4a049' }}
+            onClick={() => setShowRules(true)}
+          >
+            <img 
+              src="/assets/images/question.webp" 
+              alt="Magic" 
+              className="h-12"
+              style={{ 
+                filter: 'none',
+                forcedColorAdjust: 'none',
+                colorScheme: 'dark'
+              }}
+            />
+            <span className="text-1xl font-bold">【规则】</span>
+          </button>
+        )}
+
         {/* Image Selection Button */}
         {(gameState.status === 'playing' || gameState.status === 'won' || gameState.status === 'preview') && (
           <img 
@@ -1097,6 +1119,7 @@ export default function App() {
               paddingLeft: '30%', 
               width: '100%',
               textAlign: 'left'
+
             }}>
               {(() => {
                 const totalCentiseconds = Math.floor(elapsedTime / 10);
@@ -1111,7 +1134,7 @@ export default function App() {
         )}
 
         {/* Ghost Image (Playing Guide) */}
-        {(gameState.status === 'playing' || gameState.status === 'won') && gameState.imageUrl && (
+        {(gameState.status === 'playing' || gameState.status === 'won') && gameState.imageUrl && showReferenceImage && (
             <img 
                 src={gameState.imageUrl}
                 alt=""
@@ -1397,7 +1420,7 @@ export default function App() {
                     />
                   </div>
                 </div>
-                <div className="mt-4 flex justify-end">
+                {/* <div className="mt-4 flex justify-end">
                   <button
                     onClick={() => setShowReferenceImage(!showReferenceImage)}
                     className={`flex items-center gap-2 py-2 px-4 rounded-lg transition-colors ${
@@ -1408,6 +1431,75 @@ export default function App() {
                   >
                     <span>{showReferenceImage ? '隐藏' : '显示'}参考图片</span>
                   </button>
+                </div> */}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Rules Popup */}
+        {showRules && (
+          <div 
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+            onClick={(e) => {
+              // 防止点击弹窗背景时事件冒泡
+              e.stopPropagation();
+              setShowRules(false);
+            }}
+          >
+            <div 
+              className="bg-stone-100 rounded-xl p-6 max-w-5xl w-full max-h-[90vh] overflow-y-auto border border-stone-300"
+              style={{ 
+                backgroundImage: 'url(/assets/images/background2.webp)',
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                backgroundColor: '#fdfdfd'
+              }}
+              onClick={(e) => {
+                // 防止点击弹窗内容时关闭弹窗
+                e.stopPropagation();
+              }}
+            >
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-stone-800">游戏规则</h2>
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowRules(false);
+                  }}
+                  className="text-stone-500 hover:text-stone-800 text-3xl z-50 relative w-8 h-8 flex items-center justify-center rounded-full hover:bg-stone-200 transition-colors"
+                >
+                  ×
+                </button>
+              </div>
+              <div className="text-stone-700 space-y-4">
+                <div className="bg-stone-200/50 p-4 rounded-lg">
+                  <h3 className="text-lg font-bold mb-2 text-stone-800">基本玩法</h3>
+                  <p>1. 拖拽拼图块到正确位置，当拼图块靠近正确位置时会自动吸附</p>
+                  <p>2. 相邻的拼图块会自动连接成组，可以整体移动</p>
+                  <p>3. 双击已连接的拼图组可以将其分离</p>
+                </div>
+                
+                <div className="bg-stone-200/50 p-4 rounded-lg">
+                  <h3 className="text-lg font-bold mb-2 text-stone-800">操作说明</h3>
+                  <p>1. 点击【幻视】按钮可以显示/隐藏参考图像</p>
+                  <p>2. 点击【治愈】按钮可以自动完成拼图</p>
+                  <p>3. 点击左上角选图按钮可以更换图片和难度</p>
+                </div>
+                
+                <div className="bg-stone-200/50 p-4 rounded-lg">
+                  <h3 className="text-lg font-bold mb-2 text-stone-800">难度说明</h3>
+                  <p>1. 简单：3片</p>
+                  <p>2. 普通：4片</p>
+                  <p>3. 困难：6片</p>
+                  <p>4. 自定义：可以输入2-50之间的数字</p>
+                </div>
+                
+                <div className="bg-stone-200/50 p-4 rounded-lg">
+                  <h3 className="text-lg font-bold mb-2 text-stone-800">计时规则</h3>
+                  <p>1. 开始游戏后计时器会自动开始计时</p>
+                  <p>2. 完成拼图后计时器会停止</p>
+                  <p>3. 时间格式为：分:秒:毫秒</p>
                 </div>
               </div>
             </div>
