@@ -18,6 +18,7 @@ const TAB_RATIO = 0.25;   // Tab size relative to piece smallest dimension
 const VIEWPORT_MARGIN_X = 36; 
 const VIEWPORT_MARGIN_Y = 36; 
 const HEADER_RESERVED_SPACE = 80; // 顶部保留区域高度
+const MOBILE_HEADER_RESERVED_SPACE = 120; // 移动端顶部保留区域高度
 
 export default function App() {
   const [gameState, setGameState] = useState<GameState & { boardOrigin: Point }>({
@@ -42,6 +43,7 @@ export default function App() {
   const [hasPlayedConfetti, setHasPlayedConfetti] = useState<boolean>(false); // 跟踪是否已播放过庆祝动画
   const [showRules, setShowRules] = useState(false); // 控制规则弹窗显示
   const [showDebugAnimation, setShowDebugAnimation] = useState(false); // 控制调试动画显示
+  const [isMobileView, setIsMobileView] = useState(window.innerWidth < 730); // 检测是否为移动端视图
   
   // Dragging State
   const dragRef = useRef<{
@@ -160,7 +162,7 @@ export default function App() {
 
       // 2. Calculate Logical Board Size (Fit to Screen)
       // Reserve space at the top for the select button (button is 24*24 px with padding, so ~80px total)
-      const headerReservedSpace = 80; // Space reserved at the top for the select button
+      const headerReservedSpace = isMobileView ? MOBILE_HEADER_RESERVED_SPACE : HEADER_RESERVED_SPACE; // Space reserved at the top for the select button
       
       // Calculate available space for the puzzle (75% of screen dimensions)
       const maxPuzzleWidth = window.innerWidth * 0.75;
@@ -195,10 +197,10 @@ export default function App() {
 
       // 3. Calculate Center Offset relative to Main container
       const boardAreaW = window.innerWidth;
-      const boardAreaH = window.innerHeight - headerReservedSpace;
+      const boardAreaH = window.innerHeight - (isMobileView ? MOBILE_HEADER_RESERVED_SPACE : HEADER_RESERVED_SPACE);
 
       const originX = (boardAreaW - logicalW) / 2;
-      const originY = headerReservedSpace + (boardAreaH - logicalH) / 2;
+      const originY = (isMobileView ? MOBILE_HEADER_RESERVED_SPACE : HEADER_RESERVED_SPACE) + (boardAreaH - logicalH) / 2;
 
       // 4. Cutting Algorithm
       const isPortrait = logicalW < logicalH;
@@ -318,7 +320,7 @@ export default function App() {
         // We prioritize positions OUTSIDE the reference image.
         for (let i = 0; i < 10; i++) {
              const randX = Math.max(padding, Math.random() * maxX);
-             const randY = Math.max(padding + HEADER_RESERVED_SPACE, Math.random() * maxY);
+             const randY = Math.max(padding + (isMobileView ? MOBILE_HEADER_RESERVED_SPACE : HEADER_RESERVED_SPACE), Math.random() * maxY);
 
              // Check overlap with the reference image area
              const isOverlapping = (
@@ -378,7 +380,7 @@ export default function App() {
         setPieces(prev => prev.map(p => {
              const minX = -offsetX;
              const maxX = winW - p.width - offsetX;
-             const minY = -offsetY + HEADER_RESERVED_SPACE;
+             const minY = -offsetY + (isMobileView ? MOBILE_HEADER_RESERVED_SPACE : HEADER_RESERVED_SPACE);
              const maxY = winH - p.height - offsetY;
              
              let newX = p.currentPos.x;
@@ -399,6 +401,8 @@ export default function App() {
 
     let timeoutId: ReturnType<typeof setTimeout>;
     const handleResize = () => {
+        // 更新移动端视图状态
+        setIsMobileView(window.innerWidth < 730);
         clearTimeout(timeoutId);
         timeoutId = setTimeout(ensurePiecesInsideBounds, 100);
     };
@@ -408,7 +412,7 @@ export default function App() {
         window.removeEventListener('resize', handleResize);
         clearTimeout(timeoutId);
     };
-  }, [gameState.status]);
+  }, [gameState.status, isMobileView]);
 
 
   // --- Hit Testing Logic ---
@@ -512,7 +516,7 @@ export default function App() {
         const pMinDx = -offsetX - currentX;
         const pMaxDx = (winW - p.width - offsetX) - currentX;
         
-        const pMinDy = (-offsetY + HEADER_RESERVED_SPACE) - currentY;
+        const pMinDy = (-offsetY + (isMobileView ? MOBILE_HEADER_RESERVED_SPACE : HEADER_RESERVED_SPACE)) - currentY;
         const pMaxDy = (winH - p.height - offsetY) - currentY;
 
         minDx = Math.max(minDx, pMinDx);
@@ -966,6 +970,9 @@ export default function App() {
     // Reset confetti play status when initializing
     setHasPlayedConfetti(false);
     
+    // 初始化移动端视图检测
+    setIsMobileView(window.innerWidth < 730);
+    
     // Load the first task image
     const img = new Image();
     const src = '/assets/images/tasks/1.webp';
@@ -1070,11 +1077,17 @@ export default function App() {
             transform: translate(-50%, -50%) translate(0, -24px);
           }
         }
+        
+        @media (max-width: 730px) {
+          .control-buttons-row {
+            top: 64px !important;
+          }
+        }
       `}</style>
       
       {/* Animated Nanoka Card */}
       {showDebugAnimation && (
-        <div className="fixed top-3/4 right-4 z-50 pointer-events-none" style={{ 
+        <div className="fixed top-3/4 right-4 z-[201] pointer-events-none" style={{ 
           width: '150px',
           height: '75vh',
           transformStyle: 'preserve-3d',
@@ -1139,7 +1152,7 @@ export default function App() {
         {/* 幻视按钮 */}
         {(gameState.status === 'playing' || gameState.status === 'won') && (
           <button
-            className="absolute top-10 left-32 z-40 flex items-center cursor-pointer hover:opacity-80 transition-opacity duration-200 bg-transparent border-none"
+            className={`absolute z-40 flex items-center cursor-pointer hover:opacity-80 transition-opacity duration-200 bg-transparent border-none ${isMobileView ? 'control-buttons-row left-4' : 'top-10 left-32'}`}
             style={{ color: '#fed382' }}
             onClick={() => setShowReferenceImage(!showReferenceImage)}
             title="显示/隐藏参考图像"
@@ -1161,7 +1174,7 @@ export default function App() {
         {/* 治愈按钮 */}
         {(gameState.status === 'playing' || gameState.status === 'won') && (
           <button
-            className="absolute top-10 left-64 z-40 flex items-center cursor-pointer hover:opacity-80 transition-opacity duration-200 bg-transparent border-none"
+            className={`absolute z-40 flex items-center cursor-pointer hover:opacity-80 transition-opacity duration-200 bg-transparent border-none ${isMobileView ? 'control-buttons-row left-32' : 'top-10 left-64'}`}
             style={{ color: '#908d8e' }}
             onClick={healPuzzle}
             title="自动完成拼图"
@@ -1182,7 +1195,7 @@ export default function App() {
 
         {/* 疑问按钮 */}
         <button
-          className="absolute top-10 right-56 z-40 flex items-center cursor-pointer hover:opacity-80 transition-opacity duration-200 bg-transparent border-none"
+          className={`absolute z-40 flex items-center cursor-pointer hover:opacity-80 transition-opacity duration-200 bg-transparent border-none ${isMobileView ? 'control-buttons-row right-4' : 'top-10 right-56'}`}
           style={{ color: '#b4a049' }}
           onClick={() => setShowRules(true)}
         >
@@ -1205,7 +1218,7 @@ export default function App() {
             src="/assets/images/select.webp" 
             alt="Select" 
             onClick={() => setShowTaskSelector(true)}
-            className="absolute top-2 left-4 z-40 w-24 h-24 cursor-pointer hover:opacity-80 transition-opacity duration-200"
+            className={`absolute z-40 w-24 h-24 cursor-pointer hover:opacity-80 transition-opacity duration-200 ${isMobileView ? 'top-2 left-4' : 'top-2 left-4'}`}
             style={{ 
               filter: 'none',
               forcedColorAdjust: 'none',
@@ -1217,7 +1230,7 @@ export default function App() {
         {/* Timer Display */}
         {(gameState.status === 'playing' || gameState.status === 'won' || gameState.status === 'preview') && (
           <div 
-            className="absolute top-0 right-4 z-40 text-white text-2xl font-bold flex items-center"
+            className={`absolute z-40 text-white text-2xl font-bold flex items-center ${isMobileView ? 'top-2 right-4' : 'top-0 right-4'}`}
             style={{
               backgroundImage: 'url(/assets/images/counter.webp)',
               backgroundSize: 'contain',
@@ -1562,7 +1575,7 @@ export default function App() {
                     className="ml-2 text-white text-lg font-bold cursor-pointer hover:opacity-80 transition-opacity"
                     style={{ backgroundColor: 'transparent' }}
                   >
-                    {showDebugAnimation ? '隐藏动画' : '显示动画'}
+                    ？
                   </button>
                 </div>
                 <button 
