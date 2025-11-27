@@ -704,6 +704,23 @@ export default function App() {
       const activeGroup = currentPieces.filter(p => p.groupId === activeGroupId);
       const others = currentPieces.filter(p => p.groupId !== activeGroupId);
       
+      // Check if any piece in the active group overlaps with pieces in other groups
+      // If so, don't allow snapping
+      const hasOverlap = activeGroup.some(activePiece => {
+        return others.some(otherPiece => {
+          return (
+            activePiece.currentPos.x < otherPiece.currentPos.x + otherPiece.width &&
+            activePiece.currentPos.x + activePiece.width > otherPiece.currentPos.x &&
+            activePiece.currentPos.y < otherPiece.currentPos.y + otherPiece.height &&
+            activePiece.currentPos.y + activePiece.height > otherPiece.currentPos.y
+          );
+        });
+      });
+
+      if (hasOverlap) {
+        return currentPieces; // Don't allow snapping if there's overlap
+      }
+      
       let bestMerge: {
           targetPieceId: number;
           delta: Point;
@@ -930,7 +947,7 @@ export default function App() {
         if (startTime) {
           setElapsedTime(Date.now() - startTime);
         }
-      }, 10); // Update every 10ms for smoother display
+      }, 1); // Update every 1ms for more precise millisecond display
     }
     
     return () => {
@@ -1135,15 +1152,14 @@ export default function App() {
               paddingLeft: '30%', 
               width: '100%',
               textAlign: 'left'
-
             }}>
               {(() => {
-                const totalCentiseconds = Math.floor(elapsedTime / 10);
-                const minutes = Math.floor(totalCentiseconds / 6000);
-                const seconds = Math.floor((totalCentiseconds % 6000) / 100);
-                const centiseconds = totalCentiseconds % 100;
+                const totalMilliseconds = Math.floor(elapsedTime);
+                const minutes = Math.floor(totalMilliseconds / 60000);
+                const seconds = Math.floor((totalMilliseconds % 60000) / 1000);
+                const milliseconds = totalMilliseconds % 1000;
                 
-                return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}:${centiseconds.toString().padStart(2, '0')}`;
+                return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}:${milliseconds.toString().padStart(3, '0')}`;
               })()}
             </div>
           </div>

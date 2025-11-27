@@ -189,7 +189,7 @@ export const JigsawPiece: React.FC<Props> = ({
         left: piece.currentPos.x - bleed,
         top: piece.currentPos.y - bleed,
         pointerEvents: 'none', 
-        transition: animatePosition ? `top ${animationDuration}ms cubic-bezier(0.34, 1.56, 0.64, 1), left ${animationDuration}ms cubic-bezier(0.34, 1.56, 0.64, 1)` : 'none'
+        transition: animatePosition ? `top ${animationDuration}ms ease-out, left ${animationDuration}ms ease-out` : 'none'
       }}
     />
   );
