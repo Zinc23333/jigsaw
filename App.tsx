@@ -41,6 +41,7 @@ export default function App() {
   const [confettiKey, setConfettiKey] = useState<number>(0); // 用于强制重新渲染Confetti组件
   const [hasPlayedConfetti, setHasPlayedConfetti] = useState<boolean>(false); // 跟踪是否已播放过庆祝动画
   const [showRules, setShowRules] = useState(false); // 控制规则弹窗显示
+  const [showDebugAnimation, setShowDebugAnimation] = useState(false); // 控制调试动画显示
   
   // Dragging State
   const dragRef = useRef<{
@@ -1042,6 +1043,88 @@ export default function App() {
       className="flex flex-col h-screen text-white overflow-hidden"
       style={{ touchAction: 'none', backgroundColor: 'transparent' }}
     >
+      <style>{`
+        @keyframes flip {
+          0% {
+            transform: rotateY(0deg);
+          }
+          100% {
+            transform: rotateY(360deg);
+          }
+        }
+        
+        @keyframes orbit {
+          0% {
+            transform: translate(-50%, -50%) translate(0, -24px);
+          }
+          25% {
+            transform: translate(-50%, -50%) translate(36px, 0);
+          }
+          50% {
+            transform: translate(-50%, -50%) translate(0, 24px);
+          }
+          75% {
+            transform: translate(-50%, -50%) translate(-36px, 0);
+          }
+          100% {
+            transform: translate(-50%, -50%) translate(0, -24px);
+          }
+        }
+      `}</style>
+      
+      {/* Animated Nanoka Card */}
+      {showDebugAnimation && (
+        <div className="fixed top-3/4 right-4 z-50 pointer-events-none" style={{ 
+          width: '150px',
+          height: '75vh',
+          transformStyle: 'preserve-3d',
+          perspective: '1000px'
+        }}>
+          <div className="nanoka-card-container" style={{
+            width: '100%',
+            height: '100%',
+            animation: 'orbit 2s linear infinite',
+            transformStyle: 'preserve-3d'
+          }}>
+            <div className="nanoka-card" style={{
+              width: '100%',
+              height: '100%',
+              position: 'relative',
+              transformStyle: 'preserve-3d',
+              animation: 'flip 0.5s linear infinite'
+            }}>
+              <img 
+                src="/assets/images/nanoka.webp" 
+                alt="Nanoka" 
+                style={{
+                  position: 'absolute',
+                  maxWidth: '100%',
+                  maxHeight: '100%',
+                  width: 'auto',
+                  height: 'auto',
+                  backfaceVisibility: 'hidden',
+                  borderRadius: '10px'
+                }}
+              />
+              <img 
+                src="/assets/images/nanoka.webp" 
+                alt="Nanoka" 
+                style={{
+                  position: 'absolute',
+                  maxWidth: '100%',
+                  maxHeight: '100%',
+                  width: 'auto',
+                  height: 'auto',
+                  backfaceVisibility: 'hidden',
+                  borderRadius: '10px',
+                  transform: 'rotateY(180deg)'
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Main Board */}
       <main 
         className="flex-1 relative overflow-hidden" 
@@ -1057,8 +1140,9 @@ export default function App() {
         {(gameState.status === 'playing' || gameState.status === 'won') && (
           <button
             className="absolute top-10 left-32 z-40 flex items-center cursor-pointer hover:opacity-80 transition-opacity duration-200 bg-transparent border-none"
-            style={{ color: '#a582fe' }}
+            style={{ color: '#fed382' }}
             onClick={() => setShowReferenceImage(!showReferenceImage)}
+            title="显示/隐藏参考图像"
           >
             <img 
               src="/assets/images/magic-1.webp" 
@@ -1080,6 +1164,7 @@ export default function App() {
             className="absolute top-10 left-64 z-40 flex items-center cursor-pointer hover:opacity-80 transition-opacity duration-200 bg-transparent border-none"
             style={{ color: '#908d8e' }}
             onClick={healPuzzle}
+            title="自动完成拼图"
           >
             <img 
               src="/assets/images/magic-2.webp" 
@@ -1096,25 +1181,23 @@ export default function App() {
         )}
 
         {/* 疑问按钮 */}
-        {(gameState.status === 'playing' || gameState.status === 'won') && (
-          <button
-            className="absolute top-10 right-56 z-40 flex items-center cursor-pointer hover:opacity-80 transition-opacity duration-200 bg-transparent border-none"
-            style={{ color: '#b4a049' }}
-            onClick={() => setShowRules(true)}
-          >
-            <img 
-              src="/assets/images/question.webp" 
-              alt="Magic" 
-              className="h-12"
-              style={{ 
-                filter: 'none',
-                forcedColorAdjust: 'none',
-                colorScheme: 'dark'
-              }}
-            />
-            <span className="text-1xl font-bold">【规则】</span>
-          </button>
-        )}
+        <button
+          className="absolute top-10 right-56 z-40 flex items-center cursor-pointer hover:opacity-80 transition-opacity duration-200 bg-transparent border-none"
+          style={{ color: '#b4a049' }}
+          onClick={() => setShowRules(true)}
+        >
+          <img 
+            src="/assets/images/question.webp" 
+            alt="Magic" 
+            className="h-12"
+            style={{ 
+              filter: 'none',
+              forcedColorAdjust: 'none',
+              colorScheme: 'dark'
+            }}
+          />
+          <span className="text-1xl font-bold">【规则】</span>
+        </button>
 
         {/* Image Selection Button */}
         {(gameState.status === 'playing' || gameState.status === 'won' || gameState.status === 'preview') && (
@@ -1306,20 +1389,10 @@ export default function App() {
 
 
 
-        {/* Win Overlay */}
-        {gameState.status === 'won' && showWinMessage && (
-             <div className="absolute inset-0 bg-black/40 flex items-center justify-center z-[200] pointer-events-none animate-in fade-in duration-500">
-                 <div className="bg-white/10 backdrop-blur-md border border-white/20 p-8 rounded-2xl text-center shadow-2xl">
-                     <h2 className="text-4xl font-bold text-white mb-2 drop-shadow-md">拼图完成!</h2>
-                     <p className="text-indigo-200">干得漂亮!</p>
-                 </div>
-             </div>
-        )}
-
         {/* Task Image Selector */}
         {showTaskSelector && (
           <div 
-            className="absolute inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-start justify-center z-[200] p-4 overflow-y-auto"
             onClick={(e) => {
               // 防止点击弹窗背景时事件冒泡
               e.stopPropagation();
@@ -1327,12 +1400,12 @@ export default function App() {
             }}
           >
             <div 
-              className="bg-slate-800 rounded-xl p-6 max-w-5xl w-full max-h-[90vh] overflow-y-auto border border-slate-700"
+              className="bg-stone-800 rounded-xl p-6 max-w-5xl w-full my-8 border border-stone-700"
               style={{ 
                 backgroundImage: 'url(/assets/images/background2.webp)',
                 backgroundSize: 'cover',
                 backgroundPosition: 'center',
-                backgroundColor: 'rgba(30, 41, 59, 0.9)'
+                backgroundColor: 'rgba(59, 48, 30, 0.9)'
               }}
               onClick={(e) => {
                 // 防止点击弹窗内容时关闭弹窗
@@ -1346,16 +1419,16 @@ export default function App() {
                     e.stopPropagation();
                     setShowTaskSelector(false);
                   }}
-                  className="text-slate-400 hover:text-white text-3xl z-50 relative w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-700 transition-colors"
+                  className="text-stone-700 hover:text-white text-3xl z-50 relative w-8 h-8 flex items-center justify-center rounded-full hover:bg-stone-700 transition-colors"
                 >
                   ×
                 </button>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 max-h-[60vh] overflow-y-auto p-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 p-2">
                 {Array.from({ length: 9 }, (_, i) => i + 1).map((id) => (
                   <div 
                     key={id}
-                    className="aspect-[2/1] rounded-lg overflow-hidden cursor-pointer transform transition-transform hover:scale-105 bg-slate-700"
+                    className="aspect-[2/1] rounded-lg overflow-hidden cursor-pointer transform transition-transform hover:scale-105 bg-stone-700"
                     onClick={() => {
                       // Reset confetti play status when selecting a new task
                       setHasPlayedConfetti(false);
@@ -1378,12 +1451,10 @@ export default function App() {
               </div>
               {/* Custom Image Upload Section */}
               <div className="mt-6">
-                <h3 className="text-lg font-semibold text-white mb-3">上传自己的图片</h3>
-                <label className="flex flex-col items-center justify-center w-full aspect-[3/1] border-2 border-dashed border-slate-400 rounded-lg cursor-pointer bg-slate-800/50 hover:bg-slate-700/50 transition-colors">
+                <h3 className="text-lg font-semibold text-white mb-3">加载自己的图片</h3>
+                <label className="flex flex-col items-center justify-center w-full h-12 border-2 border-dashed border-stone-400 rounded-lg cursor-pointer bg-stone-800/50 hover:bg-stone-700/50 transition-colors">
                   <div className="flex flex-col items-center justify-center">
-                    <UploadIcon />
-                    <p className="text-sm text-slate-300 mt-1">点击上传图片</p>
-                    <p className="text-xs text-slate-400 mt-1">支持 JPG, PNG, WEBP 格式</p>
+                    <p className="text-sm text-stone-300 mt-1">点击加载图片</p>
                   </div>
                   <input 
                     type="file" 
@@ -1455,18 +1526,6 @@ export default function App() {
                     />
                   </div>
                 </div>
-                {/* <div className="mt-4 flex justify-end">
-                  <button
-                    onClick={() => setShowReferenceImage(!showReferenceImage)}
-                    className={`flex items-center gap-2 py-2 px-4 rounded-lg transition-colors ${
-                      showReferenceImage 
-                        ? 'bg-stone-600 text-white' 
-                        : 'bg-stone-200 text-stone-800 hover:bg-stone-300'
-                    }`}
-                  >
-                    <span>{showReferenceImage ? '隐藏' : '显示'}参考图片</span>
-                  </button>
-                </div> */}
               </div>
             </div>
           </div>
@@ -1475,7 +1534,7 @@ export default function App() {
         {/* Rules Popup */}
         {showRules && (
           <div 
-            className="absolute inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[200] p-4"
             onClick={(e) => {
               // 防止点击弹窗背景时事件冒泡
               e.stopPropagation();
@@ -1496,13 +1555,22 @@ export default function App() {
               }}
             >
               <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-stone-800">游戏规则</h2>
+                <div className="flex items-center">
+                  <h2 className="text-2xl font-bold text-stone-800">游戏规则</h2>
+                  <button
+                    onClick={() => setShowDebugAnimation(!showDebugAnimation)}
+                    className="ml-2 text-white text-lg font-bold cursor-pointer hover:opacity-80 transition-opacity"
+                    style={{ backgroundColor: 'transparent' }}
+                  >
+                    {showDebugAnimation ? '隐藏动画' : '显示动画'}
+                  </button>
+                </div>
                 <button 
                   onClick={(e) => {
                     e.stopPropagation();
                     setShowRules(false);
                   }}
-                  className="text-stone-500 hover:text-stone-800 text-3xl z-50 relative w-8 h-8 flex items-center justify-center rounded-full hover:bg-stone-200 transition-colors"
+                  className="text-stone-700 hover:text-stone-800 text-3xl z-50 relative w-8 h-8 flex items-center justify-center rounded-full hover:bg-stone-200 transition-colors"
                 >
                   ×
                 </button>
@@ -1512,7 +1580,7 @@ export default function App() {
                   <h3 className="text-lg font-bold mb-2 text-stone-800">基本玩法</h3>
                   <p>1. 拖拽拼图块到正确位置，当拼图块靠近正确位置时会自动吸附</p>
                   <p>2. 相邻的拼图块会自动连接成组，可以整体移动</p>
-                  <p>3. 双击已连接的拼图组可以将其分离</p>
+                  <p>3. <strong>【双击】</strong>已连接的拼图组可以将其分离</p>
                 </div>
                 
                 <div className="bg-stone-200/50 p-4 rounded-lg">
@@ -1527,14 +1595,22 @@ export default function App() {
                   <p>1. 简单：3片</p>
                   <p>2. 普通：4片</p>
                   <p>3. 困难：6片</p>
-                  <p>4. 自定义：可以输入2-50之间的数字</p>
+                  <p>4. 自定义：可以输入2-50之间的数字，较大的数字可能会有严重的性能问题</p>
+                  <p>几片指短边的拼图数量</p>
                 </div>
                 
                 <div className="bg-stone-200/50 p-4 rounded-lg">
-                  <h3 className="text-lg font-bold mb-2 text-stone-800">计时规则</h3>
-                  <p>1. 开始游戏后计时器会自动开始计时</p>
-                  <p>2. 完成拼图后计时器会停止</p>
-                  <p>3. 时间格式为：分:秒:毫秒</p>
+                  <h3 className="text-lg font-bold mb-2 text-stone-800">特别说明</h3>
+                  <p>本游戏属于《魔法少女的魔女审判》同人作品，所有素材均来自官方游戏解包，侵权删</p>
+                  <p>本游戏由 Google AiStudio Gemini 3 和 Qwen 3 Coder 共同开发</p>
+                  <p>由于个人能力有限，可能有些bug，请见谅</p>
+                  <p>如果好玩的话，欢迎推荐给其他人</p>
+                </div>
+                
+                <div className="text-xs text-stone-700 mt-4 text-center">
+                  <a href="https://github.com/Zinc23333/jigsaw" target="_blank" rel="noopener noreferrer" className="hover:text-stone-900">本游戏源代码</a>
+                  &nbsp;&nbsp;●&nbsp;&nbsp; 
+                  <a href="https4://history.manosaba.zinc233.top" target="_blank" rel="noopener noreferrer" className="hover:text-stone-900">游戏历史对话查询小工具</a>
                 </div>
               </div>
             </div>
@@ -1543,7 +1619,7 @@ export default function App() {
 
         {/* Empty State */}
         {gameState.status === 'idle' && !showTaskSelector && (
-            <div className="absolute inset-0 flex items-center justify-center text-slate-500">
+            <div className="absolute inset-0 flex items-center justify-center text-stone-500">
                 <div className="text-center">
                     <p className="text-2xl font-light mb-2">上传图片开始游戏</p>
                     <p className="text-sm opacity-50">支持格式: JPG, PNG, WEBP</p>

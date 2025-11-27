@@ -1,12 +1,7 @@
-# 拼图
+# 奈叶香拼图
 
 
-## Run Locally
+## 本地开发
 
-**Prerequisites:**  Node.js
-
-
-1. Install dependencies:
-   `bun install`
-2. Run the app:
-   `bun run dev`
+1. 安装依赖: `bun install`
+2. 运行: `bun run dev`
