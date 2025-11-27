@@ -18,7 +18,7 @@ const TAB_RATIO = 0.25;   // Tab size relative to piece smallest dimension
 const VIEWPORT_MARGIN_X = 36; 
 const VIEWPORT_MARGIN_Y = 36; 
 const HEADER_RESERVED_SPACE = 80; // 顶部保留区域高度
-const MOBILE_HEADER_RESERVED_SPACE = 120; // 移动端顶部保留区域高度
+const MOBILE_HEADER_RESERVED_SPACE = 168; // 移动端顶部保留区域高度
 
 export default function App() {
   const [gameState, setGameState] = useState<GameState & { boardOrigin: Point }>({
@@ -1080,7 +1080,7 @@ export default function App() {
         
         @media (max-width: 730px) {
           .control-buttons-row {
-            top: 64px !important;
+            top: 112px !important;
           }
         }
       `}</style>
@@ -1634,8 +1634,7 @@ export default function App() {
         {gameState.status === 'idle' && !showTaskSelector && (
             <div className="absolute inset-0 flex items-center justify-center text-stone-500">
                 <div className="text-center">
-                    <p className="text-2xl font-light mb-2">上传图片开始游戏</p>
-                    <p className="text-sm opacity-50">支持格式: JPG, PNG, WEBP</p>
+                    <p className="text-2xl font-light mb-2">点击左上角开始游戏</p>
                 </div>
             </div>
         )}
