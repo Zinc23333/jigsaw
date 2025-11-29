@@ -718,32 +718,14 @@ export default function App() {
       const activeGroup = currentPieces.filter(p => p.groupId === activeGroupId);
       const others = currentPieces.filter(p => p.groupId !== activeGroupId);
       
-      // Check if any piece in the active group overlaps with pieces in other groups
-      // If so, don't allow snapping
-      const hasOverlap = activeGroup.some(activePiece => {
-        return others.some(otherPiece => {
-          return (
-            activePiece.currentPos.x < otherPiece.currentPos.x + otherPiece.width &&
-            activePiece.currentPos.x + activePiece.width > otherPiece.currentPos.x &&
-            activePiece.currentPos.y < otherPiece.currentPos.y + otherPiece.height &&
-            activePiece.currentPos.y + activePiece.height > otherPiece.currentPos.y
-          );
-        });
-      });
-
-      if (hasOverlap) {
-        return currentPieces; // Don't allow snapping if there's overlap
-      }
-      
-      let bestMerge: {
+      // Find all possible merges first
+      let possibleMerges: {
           targetPieceId: number;
           delta: Point;
-      } | null = null;
+      }[] = [];
 
-      // 1. Find the FIRST valid snap connection between any piece in activeGroup and any piece in others
+      // 1. Find all valid snap connections between any piece in activeGroup and any piece in others
       for (const activePiece of activeGroup) {
-          if (bestMerge) break;
-
           for (const other of others) {
               const dx = activePiece.currentPos.x - other.currentPos.x;
               const dy = activePiece.currentPos.y - other.currentPos.y;
@@ -760,14 +742,14 @@ export default function App() {
                   Math.abs(activePiece.currentPos.y - other.currentPos.y) < SNAP_DISTANCE &&
                   areEdgesCompatible(activePiece.shape.right, other.shape.left)
               ) {
-                   bestMerge = {
+                   possibleMerges.push({
                        targetPieceId: other.id,
                        delta: { 
                            x: other.currentPos.x - w - activePiece.currentPos.x, 
                            y: other.currentPos.y - activePiece.currentPos.y 
                        }
-                   };
-                   break;
+                   });
+                   continue;
               }
 
               // Left of Active meets Right of Other
@@ -777,14 +759,14 @@ export default function App() {
                   Math.abs(activePiece.currentPos.y - other.currentPos.y) < SNAP_DISTANCE &&
                   areEdgesCompatible(activePiece.shape.left, other.shape.right)
               ) {
-                  bestMerge = {
+                  possibleMerges.push({
                        targetPieceId: other.id,
                        delta: { 
                            x: other.currentPos.x + w - activePiece.currentPos.x, 
                            y: other.currentPos.y - activePiece.currentPos.y 
                        }
-                   };
-                   break;
+                   });
+                   continue;
               }
 
               // Bottom of Active meets Top of Other
@@ -793,14 +775,14 @@ export default function App() {
                   Math.abs((activePiece.currentPos.y + h) - other.currentPos.y) < SNAP_DISTANCE &&
                   areEdgesCompatible(activePiece.shape.bottom, other.shape.top)
               ) {
-                  bestMerge = {
+                  possibleMerges.push({
                        targetPieceId: other.id,
                        delta: { 
                            x: other.currentPos.x - activePiece.currentPos.x, 
                            y: other.currentPos.y - h - activePiece.currentPos.y 
                        }
-                   };
-                   break;
+                   });
+                   continue;
               }
 
               // Top of Active meets Bottom of Other
@@ -809,30 +791,58 @@ export default function App() {
                   Math.abs(activePiece.currentPos.y - (other.currentPos.y + h)) < SNAP_DISTANCE &&
                   areEdgesCompatible(activePiece.shape.top, other.shape.bottom)
               ) {
-                  bestMerge = {
+                  possibleMerges.push({
                        targetPieceId: other.id,
                        delta: { 
                            x: other.currentPos.x - activePiece.currentPos.x, 
                            y: other.currentPos.y + h - activePiece.currentPos.y 
                        }
-                   };
-                   break;
+                   });
+                   continue;
               }
           }
       }
 
-      if (bestMerge) {
-          const { targetPieceId, delta } = bestMerge;
+      // If no possible merges, return early
+      if (possibleMerges.length === 0) {
+        return currentPieces;
+      }
+      
+      // Process possible merges
+      if (possibleMerges.length > 0) {
+          // Use the first merge for the primary connection
+          const firstMerge = possibleMerges[0];
+          const { targetPieceId, delta } = firstMerge;
           const targetGroupPiece = currentPieces.find(p => p.id === targetPieceId)!;
           const targetGroupId = targetGroupPiece.groupId;
           const targetGroup = currentPieces.filter(p => p.groupId === targetGroupId);
+
+          // Check if the merge would put any piece of activeGroup on top of existing pieces in the target group
+          // This ensures pieces can only merge at the edges of a group, not in the middle
+          const wouldOverlapExisting = activeGroup.some(activePiece => {
+            const proposedX = activePiece.currentPos.x + delta.x;
+            const proposedY = activePiece.currentPos.y + delta.y;
+            
+            return targetGroup.some(targetPiece => {
+              // Check if the proposed position overlaps with any existing piece in the target group
+              return (
+                Math.abs(proposedX - targetPiece.currentPos.x) < activePiece.width - 5 &&
+                Math.abs(proposedY - targetPiece.currentPos.y) < activePiece.height - 5
+              );
+            });
+          });
+
+          if (wouldOverlapExisting) {
+            // Don't allow merging on top of existing pieces
+            return currentPieces;
+          }
 
           // 2. VALIDATE THE MERGE
           // Ensure that if we move activeGroup by delta, ALL touching edges are compatible.
           if (validateGroupMerge(activeGroup, targetGroup, delta)) {
               
               // Apply Merge
-              const nextPieces = currentPieces.map(p => {
+              let nextPieces = currentPieces.map(p => {
                   if (p.groupId === activeGroupId) {
                       return {
                           ...p,
